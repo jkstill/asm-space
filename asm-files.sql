@@ -6,21 +6,24 @@ clear col
 col file_type format a20
 col full_path format a65
 col bytes format 99999999999999
+col dg_name format a15
 
 set linesize 200 trimspool on
 set pagesize 60
 
-select group_number
-	, file_number
-	, full_path
-	, block_size
-	, bytes
-	, space_allocated
-	, system_created
-	, file_type
-	, creation_date
+select 
+	substr(f.full_path,2,instr(full_path,'/')-2) dg_name
+	, f.group_number
+	, f.file_number
+	, f.full_path
+	, f.block_size
+	, f.bytes
+	, f.space_allocated
+	, f.system_created
+	, f.file_type
+	, f.creation_date
 from (
-select
+select 
 	 group_number
 	, file_number
 	, concat('+'||gname, sys_connect_by_path(aname, '/')) full_path
@@ -57,7 +60,8 @@ from
 )
 start with (mod(pindex, power(2, 24))) = 0
 connect by prior rindex = pindex
-)
+) f
+--join v$asm_diskgroup g on g.group_number = f.group_number
 where alias_directory != 'Y'
 order by creation_date
 /

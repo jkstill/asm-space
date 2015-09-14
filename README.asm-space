@@ -1,0 +1,44 @@
+
+It is assumed that ASM conventions for naming data files are followed.
+
+eg: +DG/dbname/filetype/...
+
+This information is used to get the diskgroup name and database name from the full path name.
+While the diskgroup name is available in v$ask_diskgroup the SQL JOIN to get it is not very 
+efficient (quite slow), and so it is derived from the full path name.
+
+The database name is not directly available, and is also derived from the full path name.
+
+The full path name is taken from v$alias with a connect-by-path.
+
+File types found in v$asm_file
+
+ARCHIVELOG
+ASMPARAMETERFILE
+ASMVOL
+AUTOBACKUP
+BACKUPSET
+CHANGETRACKING
+CONTROLFILE
+DATAFILE
+DATAGUARDCONFIG
+DUMPSET
+FLASHBACK
+OCRFILE
+ONLINELOG
+PARAMETERFILE
+TEMPFILE
+XTRANSPORT
+
+All file types will be captured.
+The following files types are most associated with DB and progressive space consumption and 
+should be considered when tracking sizes for growth.
+
+ARCHIVELOG
+BACKUPSET
+DATAFILE
+FLASHBACK
+TEMPFILE
+
+
+
