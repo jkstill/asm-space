@@ -4,4 +4,9 @@
 afiedt.buf
 .sh*
 .*swp
+j
+j?
+
+dups.sql
+files.txt
 

@@ -7,14 +7,20 @@ col file_type format a20
 col full_path format a65
 col bytes format 99999999999999
 col dg_name format a15
+col db_name format a10
 
-set linesize 200 trimspool on
+set linesize 250 trimspool on
 set pagesize 60
 
 select 
 	substr(f.full_path,2,instr(full_path,'/')-2) dg_name
+	, lower(substr(f.full_path,
+		instr(full_path,'/',1,1)+1,
+		instr(full_path,'/',1,2) - instr(full_path,'/',1,1)-1
+	)) db_name
 	, f.group_number
 	, f.file_number
+	, f.incarnation
 	, f.full_path
 	, f.block_size
 	, f.bytes
@@ -33,6 +39,7 @@ select
 	, space_allocated
 	, system_created
 	, file_type
+	, incarnation
 	, alias_directory
 	, creation_date
 from
@@ -50,6 +57,7 @@ from
 		, c.blocks
 		, c.bytes
 		, c.space space_allocated
+		, c.incarnation
 		, c.type file_type
 		, to_char(c.creation_date,'&&date_format') creation_date
 	from v$asm_alias a, v$asm_diskgroup b, v$asm_file c
