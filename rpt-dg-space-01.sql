@@ -1,7 +1,7 @@
 
 
 -- set this to '' for CSV output, and '--' for standard output
-define CSVOUT='--'
+define CSVOUT=''
 
 @@config.sql
 
@@ -29,15 +29,19 @@ select decode('&&CSVOUT','--','','--') RPTOUT from dual;
 
 set pagesize &&u_pagesize
 
-set head off term on 
+set head off term on timing off
+
+spool &&u_spoolcmd
 
 select  null
 	&&CSVOUT , q'[DISKGROUP,SnapTime,Total MB,Free MB,Required Mirror Free MB,Usable File MB]'
 from dual;
 
+spool off
+
 set feed &&u_feedstate head &&u_feedstate
 
-spool &&u_spoolcmd
+spool &&u_spoolcmd append
 
 with max_snaps as (
 	-- get the max snap per day for purposes of this report,
