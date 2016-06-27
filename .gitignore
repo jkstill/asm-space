@@ -11,3 +11,5 @@ dups.sql
 files.txt
 distribution.sh
 
+*.csv
+

@@ -41,4 +41,25 @@ FLASHBACK
 TEMPFILE
 
 
+## Installation
+
+Edit config.sql as needed
+
+Ensure there is a database account for the asmspc_owner (as seen in config.sql)
+
+Then run create-object.sql
+
+## Scheduling
+
+Edit the script asm-space-schedule.sql as needed
+
+Currently the schedule is set to start 1 hour after running the script, and execute daily.
+
+Now simply run the asm-space-schedule.sql 
+
+
+## Reporting
+
+
+
 
