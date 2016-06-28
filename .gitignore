@@ -12,4 +12,5 @@ files.txt
 distribution.sh
 
 *.csv
+space-consumed.sql
 

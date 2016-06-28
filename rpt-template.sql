@@ -27,8 +27,8 @@ set pagesize &&u_pagesize
 
 set head off term on 
 
-select  null
-	&&CSVOUT , q'[DISKGROUP,SnapTime,Total MB,Free MB,Required Mirror Free MB,Usable File MB]'
+select  &&RPTOUT null
+	&&CSVOUT q'[DISKGROUP,SnapTime,Total MB,Free MB,Required Mirror Free MB,Usable File MB]'
 from dual;
 
 set feed &&u_feedstate head &&u_feedstate

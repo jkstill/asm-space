@@ -35,8 +35,8 @@ set head off term on
 
 spool &&u_spoolcmd
 
-select  null
-	&&CSVOUT , q'[DB Name,File#,FullPath,SnapTime,File Type,Block Size,Blocks,Bytes,Space Allocated]'
+select  &&RPTOUT null
+	&&CSVOUT q'[DB Name,File#,FullPath,SnapTime,File Type,Block Size,Blocks,Bytes,Space Allocated]'
 from dual;
 
 spool off

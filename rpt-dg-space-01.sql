@@ -33,8 +33,8 @@ set head off term on timing off
 
 spool &&u_spoolcmd
 
-select  null
-	&&CSVOUT , q'[DISKGROUP,SnapTime,Total MB,Free MB,Required Mirror Free MB,Usable File MB]'
+select  &&RPTOUT null
+	&&CSVOUT q'[DISKGROUP,SnapTime,Total MB,Free MB,Required Mirror Free MB,Usable File MB]'
 from dual;
 
 spool off
