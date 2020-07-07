@@ -10,7 +10,7 @@ BEGIN
 		--start_date      => SYSTIMESTAMP,
 		--repeat_interval => 'freq=minutely; interval=5; bysecond=0;',
 		-- start 1 hour from now
-		start_date           =>  SYSTIMESTAMP + interval '1' Hour
+		start_date           =>  SYSTIMESTAMP + interval '1' Hour,
 		repeat_interval      => 'FREQ=DAILY', 
 		enabled         => TRUE
 	);
