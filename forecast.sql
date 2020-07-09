@@ -8,16 +8,28 @@ with diskgroups_space as (
 				, usable_file_mb
 			from diskgroups dg
 			join snapspace s on s.snap_id = dg.snap_id
-				and dg.name = 'DATA'
+				--and dg.name = 'DATA_PRDSOA'
+				and dg.name = 'FLASH_PRDSOA'
 ) ,
 forecast as (
 	select
 		name,
+		-- 3 month
+		max(snap_timestamp) + interval '3' month forecast_3_month,
+		regr_slope(space_used, snap_epoch)
+		* (max(snap_epoch_future_3_month) )
+		+ regr_intercept(space_used, snap_epoch) forecasted_space_3_month,
+		-- 6 month
+		max(snap_timestamp) + interval '6' month forecast_6_month,
+		regr_slope(space_used, snap_epoch)
+		* (max(snap_epoch_future_6_month) )
+		+ regr_intercept(space_used, snap_epoch) forecasted_space_6_month,
+		-- year
 		max(snap_timestamp) + interval '1' year forecast_year,
 		-- y = mx+b
 		regr_slope(space_used, snap_epoch)
 		* (max(snap_epoch_future_year) )
-		+ regr_intercept(space_used, snap_epoch) forecasted_space
+		+ regr_intercept(space_used, snap_epoch) forecasted_space_year
 	from (
 		select name
 		, snap_timestamp
@@ -26,6 +38,14 @@ forecast as (
 			(extract(day from(snap_timestamp - to_timestamp('1970-01-01', 'YYYY-MM-DD'))) * 86400)
 			+ to_number(to_char(sys_extract_utc(snap_timestamp), 'SSSSS'))
 		) snap_epoch
+		, (
+			(extract(day from((snap_timestamp + interval '3' month) - to_timestamp('1970-01-01', 'YYYY-MM-DD'))) * 86400)
+			+ to_number(to_char(sys_extract_utc(snap_timestamp + interval '3' month), 'SSSSS'))
+		) snap_epoch_future_3_month
+		, (
+			(extract(day from((snap_timestamp + interval '6' month) - to_timestamp('1970-01-01', 'YYYY-MM-DD'))) * 86400)
+			+ to_number(to_char(sys_extract_utc(snap_timestamp + interval '6' month), 'SSSSS'))
+		) snap_epoch_future_6_month
 		, (
 			(extract(day from((snap_timestamp + interval '1' year) - to_timestamp('1970-01-01', 'YYYY-MM-DD'))) * 86400)
 			+ to_number(to_char(sys_extract_utc(snap_timestamp + interval '1' year), 'SSSSS'))
@@ -46,24 +66,36 @@ raw_data as (
 	select
 		name
 		, forecast_year snap_timestamp
-		, trunc(forecasted_space) space_used
+		, trunc(forecasted_space_year) space_used
+	from forecast f
+	union all
+	select
+		name
+		, forecast_3_month snap_timestamp
+		, trunc(forecasted_space_3_month) space_used
+	from forecast f
+	union all
+	select
+		name
+		, forecast_6_month snap_timestamp
+		, trunc(forecasted_space_6_month) space_used
 	from forecast f
 ),
 date_conform as (
 	select
 		name
-		, to_date(to_char(snap_timestamp,'yyyy-mm-dd'),'yyyy-mm-dd') s_timestamp
-		, to_date(to_char(min(snap_timestamp) over (),'yyyy-mm-dd'),'yyyy-mm-dd') min_timestamp
-		, to_date(to_char(max(snap_timestamp) over (), 'yyyy-mm-dd'),'yyyy-mm-dd') max_timestamp
+		, snap_timestamp s_timestamp
+		, min(snap_timestamp) over () min_timestamp
+		, max(snap_timestamp) over () max_timestamp
 		, space_used
 	from raw_data d
 	order by name, d.snap_timestamp
 )
 select
 	name
-	, d.s_timestamp
-	, d.min_timestamp
-	, d.max_timestamp
+	, to_char(d.s_timestamp,'yyyy-mm-dd') s_timestamp
+	, to_char(d.min_timestamp,'yyyy-mm-dd') min_timestamp
+	, to_char(d.max_timestamp,'yyyy-mm-dd') max_timestamp
 	--, d.max_timestamp - d.min_timestamp days_to_forecast
 	--, max_space.usable_file_mb space_avail
 	, max_space.total_mb
@@ -99,4 +131,3 @@ from date_conform d,
 		)
 	) max_space
 /
-
