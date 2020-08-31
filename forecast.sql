@@ -8,8 +8,7 @@ with diskgroups_space as (
 				, usable_file_mb
 			from diskgroups dg
 			join snapspace s on s.snap_id = dg.snap_id
-				--and dg.name = 'DATA_PRDSOA'
-				and dg.name = 'FLASH_PRDSOA'
+				and dg.name = 'DATA_PRDSOA'
 ) ,
 forecast as (
 	select
