@@ -60,6 +60,15 @@ Now simply run the asm-space-schedule.sql
 
 ## Reporting
 
+### forecast.sql 
+
+Forecast when diskgroups will run out of space
+
+### diskgroup-data-csv.sql
+
+Dump the diskgroup size data to a csv file
+
+
 
 
 

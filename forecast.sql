@@ -1,3 +1,20 @@
+
+-- forecast.sql
+-- forecast when Diskgroup space will be exhausted, based on current usage
+-- using linear regression, as space usage is typically linear over time
+
+
+set pause off echo off verify off
+set linesize 200 trimspool on
+set pagesize 100
+
+clear break
+break on name skip 1
+
+host mkdir -p reports 
+
+spool reports/forecast.txt
+
 with diskgroups_space as (
 			select
 				name
@@ -8,7 +25,7 @@ with diskgroups_space as (
 				, usable_file_mb
 			from diskgroups dg
 			join snapspace s on s.snap_id = dg.snap_id
-				and dg.name = 'DATA_PRDSOA'
+				--and dg.name = 'DATA_PRDSOA'
 ) ,
 forecast as (
 	select
@@ -82,39 +99,23 @@ raw_data as (
 ),
 date_conform as (
 	select
-		name
-		, snap_timestamp s_timestamp
-		, min(snap_timestamp) over () min_timestamp
-		, max(snap_timestamp) over () max_timestamp
-		, space_used
-	from raw_data d
-	order by name, d.snap_timestamp
-)
-select
-	name
-	, to_char(d.s_timestamp,'yyyy-mm-dd') s_timestamp
-	, to_char(d.min_timestamp,'yyyy-mm-dd') min_timestamp
-	, to_char(d.max_timestamp,'yyyy-mm-dd') max_timestamp
-	--, d.max_timestamp - d.min_timestamp days_to_forecast
-	--, max_space.usable_file_mb space_avail
-	, max_space.total_mb
-	, max_space.total_mb - d.space_used space_avail
-	, d.space_used
-	-- make a prediction
-	-- space per day avg
-	-- usable space / ( space used currently - space used at start ) / ( days measured )
-	--, (max_space.space_used - min_space.space_used) /  ( max_timestamp - min_timestamp ) avg_per_day
-	, to_char(
+		d.name
+		, d.snap_timestamp s_timestamp
+		, min(d.snap_timestamp) over () min_timestamp
+		, max(d.snap_timestamp) over () max_timestamp
+		, d.space_used
+		, max_space.total_mb max_total_mb
+		,
 		max_space.usable_file_mb /
 		(
-			(max_space.space_used - min_space.space_used )
-			/ ( max_space.snap_timestamp - min_space.snap_timestamp	)
-		) + max_space.snap_timestamp
-		, 'yyyy-mm-dd'
-	) filled_date
-from date_conform d,
-	(
-		select to_date(to_char(snap_timestamp,'yyyy-mm-dd'),'yyyy-mm-dd') snap_timestamp, total_mb, usable_file_mb, total_mb - usable_file_mb space_used
+			(
+				(max_space.space_used - min_space.space_used )
+				/ ( max_space.snap_timestamp - min_space.snap_timestamp	)
+			) + 1
+		)    + max_space.snap_timestamp date_add
+	from raw_data d
+	, (
+		select name, to_date(to_char(snap_timestamp,'yyyy-mm-dd'),'yyyy-mm-dd') snap_timestamp, total_mb, usable_file_mb, total_mb - usable_file_mb space_used
 		from diskgroups_space
 			where snap_timestamp = (
 				select min(snap_timestamp)
@@ -122,11 +123,37 @@ from date_conform d,
 		)
 	) min_space
 	, (
-		select to_date(to_char(snap_timestamp,'yyyy-mm-dd'),'yyyy-mm-dd') snap_timestamp, total_mb, usable_file_mb,	 total_mb - usable_file_mb space_used
+		select name, to_date(to_char(snap_timestamp,'yyyy-mm-dd'),'yyyy-mm-dd') snap_timestamp, total_mb, usable_file_mb,	 total_mb - usable_file_mb space_used
 		from diskgroups_space
 			where snap_timestamp = (
 				select max(snap_timestamp)
 				from diskgroups_space
 		)
 	) max_space
+where min_space.name = d.name
+and max_space.name = d.name
+	order by name, d.snap_timestamp
+)
+select distinct
+	d.name
+	, to_char(d.s_timestamp,'yyyy-mm-dd') s_timestamp
+	, to_char(d.min_timestamp,'yyyy-mm-dd') min_timestamp
+	, to_char(d.max_timestamp,'yyyy-mm-dd') max_timestamp
+	--, d.max_timestamp - d.min_timestamp days_to_forecast
+	--, max_space.usable_file_mb space_avail
+	, d.max_total_mb
+	, d.max_total_mb - d.space_used space_avail
+	, d.space_used
+	-- make a prediction
+	-- space per day avg
+	-- usable space / ( space used currently - space used at start ) / ( days measured )
+	--, (max_space.space_used - min_space.space_used) /  ( max_timestamp - min_timestamp ) avg_per_day
+	, to_char( d.date_add , 'yyyy-mm-dd') filled_date
+from date_conform d
+order by name, s_timestamp
 /
+
+spool off
+
+
+
