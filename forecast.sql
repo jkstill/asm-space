@@ -31,17 +31,17 @@ forecast as (
 	select
 		name,
 		-- 3 month
-		max(snap_timestamp) + interval '3' month forecast_3_month,
+		max(add_months(snap_timestamp,3)) forecast_3_month,
 		regr_slope(space_used, snap_epoch)
 		* (max(snap_epoch_future_3_month) )
 		+ regr_intercept(space_used, snap_epoch) forecasted_space_3_month,
 		-- 6 month
-		max(snap_timestamp) + interval '6' month forecast_6_month,
+		max(add_months(snap_timestamp,6)) forecast_6_month,
 		regr_slope(space_used, snap_epoch)
 		* (max(snap_epoch_future_6_month) )
 		+ regr_intercept(space_used, snap_epoch) forecasted_space_6_month,
 		-- year
-		max(snap_timestamp) + interval '1' year forecast_year,
+		max(add_months(snap_timestamp,12)) forecast_year,
 		-- y = mx+b
 		regr_slope(space_used, snap_epoch)
 		* (max(snap_epoch_future_year) )
@@ -49,23 +49,13 @@ forecast as (
 	from (
 		select name
 		, snap_timestamp
+		-- epoch - using UTC as exact time not necessary
+		-- (cast (snap_timestamp at time zone 'UTC' as date) - date '1970-01-01') * 86400
 		-- epoch dates used to work with linear regression functions, which require a number, not a date
-		, (
-			(extract(day from(snap_timestamp - to_timestamp('1970-01-01', 'YYYY-MM-DD'))) * 86400)
-			+ to_number(to_char(sys_extract_utc(snap_timestamp), 'SSSSS'))
-		) snap_epoch
-		, (
-			(extract(day from((snap_timestamp + interval '3' month) - to_timestamp('1970-01-01', 'YYYY-MM-DD'))) * 86400)
-			+ to_number(to_char(sys_extract_utc(snap_timestamp + interval '3' month), 'SSSSS'))
-		) snap_epoch_future_3_month
-		, (
-			(extract(day from((snap_timestamp + interval '6' month) - to_timestamp('1970-01-01', 'YYYY-MM-DD'))) * 86400)
-			+ to_number(to_char(sys_extract_utc(snap_timestamp + interval '6' month), 'SSSSS'))
-		) snap_epoch_future_6_month
-		, (
-			(extract(day from((snap_timestamp + interval '1' year) - to_timestamp('1970-01-01', 'YYYY-MM-DD'))) * 86400)
-			+ to_number(to_char(sys_extract_utc(snap_timestamp + interval '1' year), 'SSSSS'))
-		) snap_epoch_future_year
+		, (cast(snap_timestamp at time zone 'UTC' as date) - date '1970-01-01') * 86400 snap_epoch
+		, (add_months(cast(snap_timestamp at time zone 'UTC' as date),3) - date '1970-01-01') * 86400 snap_epoch_future_3_month
+		, (add_months(cast(snap_timestamp at time zone 'UTC' as date),6) - date '1970-01-01') * 86400 snap_epoch_future_6_month
+		, (add_months(cast(snap_timestamp at time zone 'UTC' as date),12) - date '1970-01-01') * 86400 snap_epoch_future_year
 		, (total_mb - usable_file_mb) space_used
 		from diskgroups_space
 		order by name, snap_timestamp
